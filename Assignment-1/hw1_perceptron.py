@@ -38,7 +38,53 @@ class Perceptron:
         # to correct weights w. Note that w[0] is the bias term. and first term is 
         # expected to be 1 --- accounting for the bias
         ############################################################################
-        raise NotImplementedError
+        weight = np.asarray(self.w,dtype = float) # transposed weight vector
+        weight[0] = 1
+        i=0
+        for i in range(0,self.max_iteration):
+            for feat,label in zip(features,labels): #update rule
+                feature = np.asarray(feat)
+                y_real = label
+                y_pre = np.sign(np.dot(weight,feature.T))
+                if y_real != y_pre:
+                    weight += y_real*feature/np.linalg.norm(feature)
+            converge = 1
+            for feat,label in zip(features,labels): #check convergence
+                feature = np.asarray(feat)
+                y_real = label
+                y_pre = np.sign(np.dot(weight,feature.T))
+                if y_real != y_pre:
+                    converge = 0
+                    break
+            if converge == 1:
+                break
+        self.w = weight.tolist()
+        if converge == 1:
+            return True
+        else:
+            return False
+            
+#         weight = np.asarray(self.w,dtype = float) # transposed weight vector
+#         weight[0] = 1
+#         i = 0
+#         while True:
+#             i += 1
+#             sample_number = np.random.randint(0,len(features))
+#             selected_sample = np.asarray(features[sample_number])
+#             y_real = labels[sample_number]
+#             y_pre = np.sign(np.dot(weight,selected_sample.T))
+#             if y_real != y_pre:
+#                 weight += y_real*selected_sample/np.linalg.norm(selected_sample)
+
+#             if i >= self.max_iteration:
+#                 break
+#         self.w = weight.tolist() 
+#         for sample,label in zip(features,labels):# if converged?
+#             y_pre = np.sign(np.dot(weight,np.asarray(sample).T))
+#             if label != y_pre:
+#                 return False
+#         return True
+        #raise NotImplementedError
     
     def reset(self):
         self.w = [0 for i in range(0,self.nb_features+1)]
@@ -57,8 +103,13 @@ class Perceptron:
         # This should take a list of features and labels [-1,1] and use the learned 
         # weights to predict the label
         ############################################################################
-        
-        raise NotImplementedError
+        y = []
+        weight = np.asarray(self.w)
+        for sample in features:
+            y_pre = np.sign(np.dot(weight,np.asarray(sample).T))
+            y.append(y_pre)
+        return y
+        #raise NotImplementedError
 
     def get_weights(self) -> Tuple[List[float], float]:
         return self.w

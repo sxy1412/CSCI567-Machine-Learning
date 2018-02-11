@@ -5,6 +5,7 @@ from typing import List, Tuple, Callable
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
+import copy
 
 class Perceptron:
 
@@ -41,15 +42,20 @@ class Perceptron:
         weight = np.asarray(self.w,dtype = float) # transposed weight vector
         weight[0] = 1
         i=0
+        x = copy.deepcopy(features)
+        y = copy.deepcopy(labels)
         for i in range(0,self.max_iteration):
-            for feat,label in zip(features,labels): #update rule
+            z = list(zip(x,y))
+            np.random.shuffle(z)
+            x,y = zip(*z)
+            for feat,label in zip(x,y): #update rule
                 feature = np.asarray(feat)
                 y_real = label
                 y_pre = np.sign(np.dot(weight,feature.T))
                 if y_real != y_pre:
                     weight += y_real*feature/np.linalg.norm(feature)
             converge = 1
-            for feat,label in zip(features,labels): #check convergence
+            for feat,label in zip(x,y): #check convergence
                 feature = np.asarray(feat)
                 y_real = label
                 y_pre = np.sign(np.dot(weight,feature.T))

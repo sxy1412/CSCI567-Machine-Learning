@@ -46,7 +46,15 @@ def binary_train(X, y, w0=None, b0=None, step_size=0.5, max_iterations=1000):
     """
     TODO: add your code here
     """
-
+    x0 = np.ones((N,1))
+    X_set = np.hstack((x0,X))
+    w = np.hstack((b,w))
+    for i in range(0,max_iterations):
+        sum_error = 0
+        for x,Y in zip(X_set,y):
+            sum_error += np.dot(sp.special.expit(np.dot(w.T,x))-Y,x)
+        w = w - np.dot(step_size,sum_error/N)
+    b,w=np.split(w,[1,])
     assert w.shape == (D,)
     return w, b
 
@@ -66,7 +74,14 @@ def binary_predict(X, w, b):
 
     """
     TODO: add your code here
-    """      
+    """
+    for i in range(0,N):
+        a = np.dot(w.T,X[i])+b
+        if sp.special.expit(a)>=0.5: #how to handle sigmod(a) = 0.5
+            preds[i] = 1
+        else:
+            preds[i] = 0
+
     assert preds.shape == (N,) 
     return preds
 
@@ -113,7 +128,29 @@ def multinomial_train(X, y, C,
     """
     TODO: add your code here
     """
+    # convert y_n to y_nk
+    y_nk = np.zeros((N,C))
+    for i in range(0,N):
+        c = y[i]
+        y_nk[i][c]= 1
+    # asorb b into w
+    x0 = np.ones((N,1))
+    X_set = np.hstack((x0,X))
+    b0 = np.ones((C,1))
+    w_set =  np.hstack((b0,w))
 
+    g = np.zeros((C,D+1))
+    for i in range(0,max_iterations):
+        for n in range(0,N):
+            wx = np.dot(w_set,X_set[n])
+            denominator = sum(np.exp(wx-max(wx)))
+            for c in range(0,C): #calculate gradient
+                prob =  np.exp(wx[c]-max(wx))/denominator
+                g[c] = (prob-y_nk[n][c])*X_set[n]
+            for c in range(0,C): #update
+                w_set[c] -= step_size/N*g[c]
+    b = w_set[:,0]
+    w = w_set[:,1:D+1]
     assert w.shape == (C, D)
     assert b.shape == (C,)
     return w, b
@@ -141,9 +178,16 @@ def multinomial_predict(X, w, b):
     """
     TODO: add your code here
     """   
+    y_pro = np.zeros((C,N))
+    for i in range(0,C):
+        for j in range(0,N):
+            pro = np.dot(w[i],X[j])+b[i]
+            y_pro[i][j] = pro
+    preds = np.argmax(y_pro,axis=0)
 
     assert preds.shape == (N,)
     return preds
+
 
 
 def OVR_train(X, y, C, w0=None, b0=None, step_size=0.5, max_iterations=1000):
@@ -180,6 +224,14 @@ def OVR_train(X, y, C, w0=None, b0=None, step_size=0.5, max_iterations=1000):
     """
     TODO: add your code here
     """
+    for i in range(0,C):
+        y_binary = np.zeros(N)
+        for j in range(0,N):
+            if y[j] == i:
+                y_binary[j] = 1
+        w_i,b_i = binary_train(X, y_binary, w[i], b[i], step_size, max_iterations)
+        w[i] = w_i
+        b[i] = b_i
     assert w.shape == (C, D), 'wrong shape of weights matrix'
     assert b.shape == (C,), 'wrong shape of bias terms vector'
     return w, b
@@ -208,9 +260,18 @@ def OVR_predict(X, w, b):
     """
     TODO: add your code here
     """
+    y_pro = np.zeros((C,N))
+    for i in range(0,C):
+        for j in range(0,N):
+            pro = np.dot(w[i],X[j])+b[i]
+            y_pro[i][j] = pro
+    preds = np.argmax(y_pro,axis=0)
 
     assert preds.shape == (N,)
     return preds
+
+# def softmax(x,max_x,w):
+#     return np.exp(x - max_x) / sum(np.exp(np.dot(w,x) - max_x))
 
 
 #######################################################################

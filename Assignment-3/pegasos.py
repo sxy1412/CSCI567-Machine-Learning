@@ -15,8 +15,17 @@ def objective_function(X, y, w, lamb):
     - train_obj: the value of objective function in SVM primal formulation
     """
     # you need to fill in your solution here
-
-
+    N = len(y)
+    sqr_sum = 0
+    for weight in w:
+        sqr_sum += np.power(weight,2)
+    max_sum = 0
+    for i in range(0,N):
+        error = y[i]*np.dot(w.T,X[i].T) # w is column vector D*1
+        if 1-error > 0:
+            max_sum += error
+    obj_value = lamb/2*sqr_sum+1/N*max_sum
+    obj_value = obj_value.tolist()
     return obj_value
 
 
@@ -45,10 +54,30 @@ def pegasos_train(Xtrain, ytrain, w, lamb, k, max_iterations):
 
     for iter in range(1, max_iterations + 1):
         A_t = np.floor(np.random.rand(k) * N).astype(int)  # index of the current mini-batch
-
         # you need to fill in your solution here
-
-
+        # Randomly choose a subset of data, At
+        X_At = Xtrain[A_t]
+        y_At = ytrain[A_t]
+        # Set A_t^+
+        X_At_pos = []
+        y_At_pos = []
+        for x,y in zip(X_At,y_At):
+            if y*np.dot(w.T,x.T) < 1:
+                X_At_pos.append(x)
+                y_At_pos.append(y)
+        X_At_pos = np.array(X_At_pos)
+        y_At_pos = np.array(y_At_pos)
+        eta_t = 1/(lamb*iter)
+        sum_yx = np.zeros((D, 1))
+        for x,y in zip(X_At_pos,y_At_pos):
+            sum_yx += y*(x.reshape((D,1)))
+        w_t_0 = (1-eta_t*lamb)*w+eta_t/k*sum_yx
+        temp = 1/(np.sqrt(lamb)*np.linalg.norm(w_t_0))
+        if temp < 1:
+            w = temp*w_t_0
+        else:
+            w = w_t_0
+        train_obj.append(objective_function(Xtrain, ytrain, w, lamb))
     return w, train_obj
 
 
@@ -65,8 +94,14 @@ def pegasos_test(Xtest, ytest, w, t = 0.):
     - test_acc: testing accuracy.
     """
     # you need to fill in your solution here
-
-
+    Xtest = np.array(Xtest)
+    ytest = np.array(ytest)
+    D = len(Xtest[0])
+    correct = 0
+    for x,y in zip(Xtest, ytest):
+        if y*np.dot(w.T,x.T) > 0:
+            correct += 1
+    test_acc = correct/len(ytest)
     return test_acc
 
 

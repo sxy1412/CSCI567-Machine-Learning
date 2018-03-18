@@ -12,7 +12,8 @@ class DecisionTree(Classifier):
 		assert(len(features) > 0)
 		self.feautre_dim = len(features[0])
 		num_cls = np.max(labels)+1
-
+		# print(features)
+		# print(labels)
 		# build the tree
 		self.root_node = TreeNode(features, labels, num_cls)
 		if self.root_node.splittable:
@@ -69,26 +70,73 @@ class TreeNode(object):
 					  C is the number of classes,
 					  B is the number of branches
 					  it stores the number of 
+					  corresponding training samples
 			'''
 			########################################################
 			# TODO: compute the conditional entropy
 			########################################################
-			
-		
-		for idx_dim in range(len(features[0])):
+			branches = np.array(branches)
+			C,B = branches.shape
+			class_sum = np.sum(branches, axis=0) # B dimension array
+			probability_bc = np.empty_like(branches)
+			probability_b = class_sum/np.sum(branches)
+			con_entropy = 0
+			for b in range(0,B):
+				for c in range(0,C):
+					probability_bc[c][b] = branches[c][b]/class_sum[b]
+				entropy = 0
+				for c in range(0,C):
+					if (probability_bc[c][b] != 0):
+						entropy -= probability_bc[c][b]*np.log(probability_bc[c][b])
+				con_entropy += probability_b[b]*entropy
+			return con_entropy
+
+		con_entropy_min = -1
+		features = np.array(self.features)
+		classes = np.unique(self.labels)
+		C = len(classes)
+		for idx_dim in range(len(self.features[0])):
 		############################################################
 		# TODO: compare each split using conditional entropy
 		#       find the 
 		############################################################
-
-
-
-
+			#get branches metrix
+			attribute_values = np.unique(features[:,idx_dim])
+			B = len(attribute_values)
+			branches = np.zeros((C,B))
+			for n in range(0,len(self.labels)):
+				for b in range(0,B):
+					for c in range(0,C):
+						if self.features[n][idx_dim] == attribute_values[b] and self.labels[n] == classes[c]:
+							branches[c][b] += 1
+			branches.tolist()
+			# print("dim =",idx_dim)
+			con_entropy = conditional_entropy(branches)
+			# print(con_entropy)
+			if con_entropy_min == -1 or con_entropy < con_entropy_min:
+				self.dim_split = idx_dim
+				self.feature_uniq_split = attribute_values
+		self.feature_uniq_split = self.feature_uniq_split.tolist()
 		############################################################
 		# TODO: split the node, add child nodes
 		############################################################
+		features_removed = np.delete(features,self.dim_split,1)
+		features_removed = features_removed.tolist()
+		for feature in self.feature_uniq_split:
+			child_features =[]
+			child_labels = []
 
-
+			#get instances
+			for n in range(0,len(self.labels)):
+				if feature == self.features[n][self.dim_split]:
+					# print(n)
+					child_features.append(features_removed[n])
+					child_labels.append(self.labels[n])
+			child_num_cls = np.max(child_labels)+1
+			child_node = TreeNode(child_features, child_labels, child_num_cls)
+			if child_features[0] == []:
+				child_node.splittable = False
+			self.children.append(child_node)
 
 
 		# split the child nodes

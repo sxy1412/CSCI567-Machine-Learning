@@ -23,7 +23,7 @@ def objective_function(X, y, w, lamb):
     for i in range(0,N):
         error = y[i]*np.dot(w.T,X[i].T) # w is column vector D*1
         if 1-error > 0:
-            max_sum += error
+            max_sum += (1-error)
     obj_value = lamb/2*sqr_sum+1/N*max_sum
     obj_value = obj_value.tolist()
     return obj_value

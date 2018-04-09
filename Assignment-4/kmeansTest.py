@@ -31,8 +31,13 @@ def transform_image(image, code_vectors):
     # - implement the function
 
     # DONOT CHANGE CODE ABOVE THIS LINE
-    raise Exception(
-        'Implement transform_image function (filename:kmeansTest.py')
+    L,W,D = image.shape
+    compression = np.zeros([L,W,D])
+    for l in range(0,L):
+        for w in range(0,W):
+            k =np.argmin(np.sum((code_vectors-image[l,w])**2,axis=1))
+            compression[l,w] = code_vectors[k]
+    return compression
     # DONOT CHANGE CODE BELOW THIS LINE
 
 

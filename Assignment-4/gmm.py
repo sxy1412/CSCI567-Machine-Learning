@@ -48,8 +48,19 @@ class GMM():
             # - compute variance and pi_k
 
             # DONOT MODIFY CODE ABOVE THIS LINE
-            raise Exception(
-                'Implement initialization of variances, means, pi_k using k-means')
+            k_means = KMeans(n_cluster=self.n_cluster, max_iter=self.max_iter, e=self.e)
+            means, membership, i = k_means.fit(x)
+            N_k = np.bincount(membership)
+            pi_k = N_k/N
+            variances = np.zeros([self.n_cluster,D,D])
+            for k in range(0,self.n_cluster):
+                sample_index = [index for index, value in enumerate(membership) if value == k] 
+                x_in_cluster_k = x[sample_index]
+                diff = x_in_cluster_k - means[k]
+                variances[k] = np.dot(diff.T,diff)/N_k[k]
+            self.means = means
+            self.variances = variances
+            self.pi_k = pi_k
             # DONOT MODIFY CODE BELOW THIS LINE
 
         elif (self.init == 'random'):
@@ -59,8 +70,12 @@ class GMM():
             # - compute variance and pi_k
 
             # DONOT MODIFY CODE ABOVE THIS LINE
-            raise Exception(
-                'Implement initialization of variances, means, pi_k randomly')
+            variances = np.zeros([self.n_cluster,D,D])
+            for k in range(0,self.n_cluster):
+                variances[k] = np.identity(D)
+            self.means = np.random.rand(self.n_cluster,D)
+            self.variances = variances
+            self.pi_k = np.asarray([1/self.n_cluster]*self.n_cluster)
             # DONOT MODIFY CODE BELOW THIS LINE
 
         else:
@@ -73,7 +88,31 @@ class GMM():
         # Hint: Try to seperate E & M step for clarity
 
         # DONOT MODIFY CODE ABOVE THIS LINE
-        raise Exception('Implement fit function (filename: gmm.py)')
+        # Compute the log-likelihood
+        log_likelihood_current = self.compute_log_likelihood(x)
+        for update_iteration in range(0,self.max_iter):
+            # E Step
+            gamma_ik = np.zeros([N,self.n_cluster])
+            for i in range(0,N):
+                p_x = self.calculate_p_x(x[i])
+                for k in range(0,self.n_cluster):
+                    gamma_ik[i][k] = self.pi_k[k]*self.get_guassian_pro(x[i],self.means[k],self.variances[k])/p_x
+            # M Step
+            N_k = np.sum(gamma_ik,axis=0)
+            self.means = np.divide((np.dot(gamma_ik.T,x)).T,N_k).T
+            variances = np.zeros([self.n_cluster,D,D])
+            for k in range(0,self.n_cluster):
+                gamma_k = gamma_ik[:,k]
+                diff = x - self.means[k]
+                variances[k] = np.dot(gamma_k*diff.T,diff)/N_k[k]
+            self.variances = variances
+            self.pi_k = N_k/N
+            # Compute the log-likelihood
+            log_likelihood_new = self.compute_log_likelihood(x)
+            if np.absolute(log_likelihood_current-log_likelihood_new)<self.e:
+                break
+            log_likelihood_current = log_likelihood_new
+        return update_iteration
         # DONOT MODIFY CODE BELOW THIS LINE
 
     def sample(self, N):
@@ -95,7 +134,13 @@ class GMM():
         # - return the samples
 
         # DONOT MODIFY CODE ABOVE THIS LINE
-        raise Exception('Implement sample function in gmm.py')
+        D = len(self.variances[0])
+        samples = np.zeros([N,D])
+        clusters = np.random.choice(self.n_cluster, size=N, p=self.pi_k)
+        for i in range(0,N):
+            k = clusters[i]
+            samples[i] = np.random.multivariate_normal(self.means[k], self.variances[k])
+        return samples
         # DONOT MODIFY CODE BELOW THIS LINE
 
     def compute_log_likelihood(self, x):
@@ -112,5 +157,25 @@ class GMM():
         # - return the log-likelihood
         # Note: you can call this function in fit function (if required)
         # DONOT MODIFY CODE ABOVE THIS LINE
-        raise Exception('Implement compute_log_likelihood function in gmm.py')
+        log_likelihood = 0.0
+        for i in range(0,len(x)):
+            p_x = self.calculate_p_x(x[i])
+            log_likelihood += np.log(p_x)
+        log_likelihood = float(log_likelihood)
+        return log_likelihood
+    def get_guassian_pro(self,xx,mu,sigma):
+        inv = False
+        while not inv:
+            try:
+                sigma_inv = np.linalg.inv(sigma)
+                inv = True
+            except np.linalg.LinAlgError:
+                sigma += np.identity(len(xx))*0.001
+        temp = np.dot(np.dot(xx-mu,sigma_inv),(xx-mu).T)
+        return np.exp(-0.5*temp)/(np.sqrt(np.power(2*np.pi,len(xx))*np.linalg.det(sigma)))
+    def calculate_p_x(self,xx):
+        probabilities = np.zeros(self.n_cluster)
+        for k in range(0,self.n_cluster):
+                probabilities[k] = self.get_guassian_pro(xx,self.means[k],self.variances[k])
+        return np.dot(self.pi_k,probabilities)
         # DONOT MODIFY CODE BELOW THIS LINE

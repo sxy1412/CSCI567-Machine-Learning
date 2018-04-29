@@ -22,7 +22,9 @@ def forward(pi, A, B, O):
   ###################################################
   # Q3.1 Edit here
   ###################################################
-
+  alpha[:,0] = pi*B[:,O[0]] # Base Case
+  for t in range(1,N):
+    alpha[:,t] = B[:,O[t]]*np.dot(A.T,alpha[:,t-1])
   return alpha
 
 
@@ -45,7 +47,9 @@ def backward(pi, A, B, O):
   ###################################################
   # Q3.1 Edit here
   ###################################################
-  
+  beta[:,N-1]= np.asarray([1]*S)# Base Case
+  for t in range(N-1,-1,-1):
+    beta[:,t-1] = np.sum(beta[:,t]*A*B[:,O[t]],axis=1)
   return beta
 
 def seqprob_forward(alpha):
@@ -62,7 +66,8 @@ def seqprob_forward(alpha):
   ###################################################
   # Q3.2 Edit here
   ###################################################
-  
+  S,T = alpha.shape
+  prob = np.sum(alpha[:,T-1])
   return prob
 
 
@@ -84,7 +89,7 @@ def seqprob_backward(beta, pi, B, O):
   ###################################################
   # Q3.2 Edit here
   ###################################################
-  
+  prob = np.sum(beta[:,0]*pi*B[:,O[0]])
   return prob
 
 def viterbi(pi, A, B, O):
@@ -105,7 +110,23 @@ def viterbi(pi, A, B, O):
   ###################################################
   # Q3.3 Edit here
   ###################################################
-  
+  S = len(pi)
+  N = len(O)
+  delta = np.zeros([S, N])
+  delta_states = np.zeros([S, N])
+  delta[:,0] = pi*B[:,O[0]] # Base Case
+  delta_states[:,0] = np.asarray([-1]*S)
+  for t in range (1,N):
+    temp = delta[:,t-1]*A.T
+    delta[:,t] = np.max(temp,axis=1)*B[:,O[t]]
+    delta_states[:,t] = np.argmax(temp,axis=1) 
+
+  delta_states = delta_states.astype(int)
+  state = np.argmax(delta[:,N-1])
+  # Trace Back
+  for t in range (N-1,-1,-1):
+    path.append(state)
+    state = delta_states[state,t]
   return path
 
 

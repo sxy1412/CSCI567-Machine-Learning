@@ -21,7 +21,14 @@ def pca(X = np.array([]), no_dims = 50):
     M = np.array([])
 
     """TODO: write your code here"""
-    
+    N,D = X.shape
+    cov = 1/N*np.dot(X.T,X)
+    eigenvalue, eigenvectors = np.linalg.eig(cov)
+    index = np.argsort(eigenvalue)[D-no_dims:D]
+    eigenvectors_selected = (eigenvectors.T)[index]
+    M = eigenvectors_selected.T
+    Y = np.dot(X,M)
+
     return Y, M
 
 def decompress(Y = np.array([]), M = np.array([])):
@@ -42,7 +49,7 @@ def decompress(Y = np.array([]), M = np.array([])):
     X_hat = np.array([])
 
     """TODO: write your code here"""
-    
+    X_hat = np.dot(Y,M.T)
     return X_hat
 
 def reconstruction_error(orig = np.array([]), decompressed = np.array([])):
@@ -56,7 +63,7 @@ def reconstruction_error(orig = np.array([]), decompressed = np.array([])):
     error = 0
 
     """TODO: write your code here"""
-    
+    error = np.mean((orig - decompressed)**2)
     return error
 
 def load_data(dataset='mnist_subset.json'):
